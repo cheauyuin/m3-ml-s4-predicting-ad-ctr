@@ -1,0 +1,29 @@
+# Data — never commit large datasets
+data/
+*.csv
+*.tsv
+*.gz
+*.zip
+*.parquet
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.python-version
+
+# Jupyter
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# Models / outputs
+*.pkl
+*.joblib
+models/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
