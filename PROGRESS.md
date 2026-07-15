@@ -13,30 +13,31 @@ Repo: https://github.com/cheauyuin/m3-ml-s4-predicting-ad-ctr
 - [x] Picked scenario S4
 - [x] Created GitHub repo and cloned to `NTU/M3/m3-ml-s4-predicting-ad-ctr`
 - [x] Scaffolded project: `.gitignore`, `README.md`, `requirements.txt`, `notebooks/eda.ipynb`, `src/features.py`
-- [ ] **Commit & push scaffold** (not done yet)
-- [ ] Create venv + install requirements
-- [ ] Download Avazu `train.csv` into `data/`
-- [ ] Run `notebooks/eda.ipynb` end to end
+- [x] Commit & push scaffold
+- [x] Create venv + install requirements
+- [x] Download Avazu `train.csv` into `data/`
+- [x] Run `notebooks/eda.ipynb` end to end
 
-## Next commands to run (VSCode terminal, inside the project folder)
-```bash
-# 1. Commit & push the scaffold
-git add .
-git commit -m "Scaffold CTR project: structure, notebook, requirements"
-git push -u origin main
+## Results (first 200k rows, 7 low-cardinality categorical features)
+| Model | AUC | Log-loss |
+|---|---|---|
+| Baseline (constant) | 0.500 | 0.4633 |
+| Logistic Regression | 0.6156 | 0.4499 |
+| LightGBM | 0.6377 | 0.4448 |
 
-# 2. Environment
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m ipykernel install --user --name m3-ctr --display-name "Python (m3-ctr)"
-```
+Both AUC and log-loss improve monotonically baseline → LogReg → LightGBM — clean story for slides.
+No leakage (AUC well below the ~0.99 red flag).
 
-## Then
-1. Download an Avazu CTR sample and put `train.csv` in `data/`
-   https://www.kaggle.com/competitions/avazu-ctr-prediction/data
-2. Open `notebooks/eda.ipynb` → Select Kernel = "Python (m3-ctr)" → Run All
-3. Report the AUC / log-loss numbers (or any errors) to continue.
+Note: LogReg deliberately does **not** use `class_weight='balanced'` — it improved AUC but wrecked
+log-loss (0.67, worse than baseline) by distorting predicted probabilities. Left unbalanced for a
+clean monotonic story; calibration is listed as a "next step" if we want to revisit it as a teaching
+point.
+
+## Next up
+1. Add high-cardinality features (`site_id`, `device_model`) via frequency/target encoding
+2. Tune LightGBM hyperparameters
+3. Split train/test **by time** instead of randomly (more realistic for CTR)
+4. Feature importance chart + ROC curve → slides
 
 ## Plan (the presentation arc)
 EDA (imbalance) → feature prep → baseline → Logistic Regression → LightGBM → evaluation (AUC,
@@ -47,3 +48,7 @@ Story: baseline → logistic → boosting with AUC climbing.
 - Never commit `data/` or large CSVs (already in `.gitignore`).
 - Notebooks cause git merge conflicts — each teammate works in their own notebook file.
 - Don't report training-set scores; always use the held-out test set. AUC ~0.99 = likely leakage.
+- macOS: LightGBM needs `brew install libomp` (OpenMP) or it fails on import with a
+  `dlopen`/`libomp.dylib not found` error.
+- VSCode kernel picker can lag behind `jupyter kernelspec list` — if a registered kernel doesn't
+  show up, reload the window or use "Select Another Kernel..." → "Jupyter Kernel...".
