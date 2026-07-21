@@ -17,8 +17,9 @@ Repo: https://github.com/cheauyuin/m3-ml-s4-predicting-ad-ctr
 - [x] Create venv + install requirements
 - [x] Download Avazu `train.csv` into `data/`
 - [x] Run `notebooks/eda.ipynb` end to end
+- [x] Full-scale validated pipeline (40M rows, time-based split, tuned models) — `notebooks/full_pipeline.ipynb`
 
-## Results (first 200k rows, 7 low-cardinality categorical features)
+## Results — quick demo (`eda.ipynb`, first 200k rows, random split, 7 low-card features)
 | Model | AUC | Log-loss |
 |---|---|---|
 | Baseline (constant) | 0.500 | 0.4633 |
@@ -26,18 +27,40 @@ Repo: https://github.com/cheauyuin/m3-ml-s4-predicting-ad-ctr
 | LightGBM | 0.6377 | 0.4448 |
 
 Both AUC and log-loss improve monotonically baseline → LogReg → LightGBM — clean story for slides.
-No leakage (AUC well below the ~0.99 red flag).
+No leakage (AUC well below the ~0.99 red flag). Kept fast (~30s Run All) for live demoing.
 
 Note: LogReg deliberately does **not** use `class_weight='balanced'` — it improved AUC but wrecked
 log-loss (0.67, worse than baseline) by distorting predicted probabilities. Left unbalanced for a
 clean monotonic story; calibration is listed as a "next step" if we want to revisit it as a teaching
 point.
 
+## Results — full-scale validated pipeline (`full_pipeline.ipynb`, all 40M rows)
+Time-based split: train = days 21-28, val (early stopping/tuning) = day 29, **test = day 30,
+touched exactly once.** Adds leak-safe frequency encoding for `site_id`, `app_id`, `device_model`,
+`device_id`, `device_ip` (frequency maps fit on train only). All metrics below are on day 30.
+
+| Model | Train AUC | Test AUC | Test log-loss | Train-Test AUC gap |
+|---|---|---|---|---|
+| Baseline | — | 0.500 | 0.4633 | — |
+| Logistic Regression (C=0.1) | 0.6269 | 0.6509 | 0.4371 | -0.024 (stable, no overfit — test even beats train) |
+| LightGBM (tuned + early-stopped) | 0.7545 | 0.7278 | 0.4085 | +0.027 (small, healthy) |
+
+LightGBM best config: `num_leaves=63, learning_rate=0.1, min_child_samples=100, reg_alpha=1.0,
+reg_lambda=1.0, subsample=0.7, colsample_bytree=0.7`, early-stopped at 860 trees (not guessed).
+Chosen via a 5-config search on a 3M-row subsample, confirmed at full scale.
+
+Takeaway for slides: LogReg is very stable but capacity-limited (linear, plateaus regardless of
+`C`); LightGBM has a much higher ceiling and, thanks to tuned regularization + early stopping,
+still generalizes well (small train-test gap) despite far more capacity.
+
+Runtime: `full_pipeline.ipynb` takes ~20-25 min for Run All (LightGBM search+final ~16 min,
+LogReg ~8 min) — not meant for a live demo, use `eda.ipynb` for that.
+
 ## Next up
-1. Add high-cardinality features (`site_id`, `device_model`) via frequency/target encoding
-2. Tune LightGBM hyperparameters
-3. Split train/test **by time** instead of randomly (more realistic for CTR)
-4. Feature importance chart + ROC curve → slides
+1. Try target encoding (with cross-fitting to avoid leakage) — may beat frequency encoding
+2. If submitting to Kaggle leaderboard: refit frequency maps on all of `train.csv` (no future
+   data to hold out at submission time), run the same pipeline on Kaggle's `test.gz`, submit
+3. Pull the full-pipeline results/plots into slides
 
 ## Plan (the presentation arc)
 EDA (imbalance) → feature prep → baseline → Logistic Regression → LightGBM → evaluation (AUC,
