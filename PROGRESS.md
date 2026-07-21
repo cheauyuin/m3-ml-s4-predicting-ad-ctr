@@ -53,14 +53,37 @@ Takeaway for slides: LogReg is very stable but capacity-limited (linear, plateau
 `C`); LightGBM has a much higher ceiling and, thanks to tuned regularization + early stopping,
 still generalizes well (small train-test gap) despite far more capacity.
 
-Runtime: `full_pipeline.ipynb` takes ~20-25 min for Run All (LightGBM search+final ~16 min,
-LogReg ~8 min) — not meant for a live demo, use `eda.ipynb` for that.
+Runtime: `full_pipeline.ipynb` takes ~35-40 min for Run All (LightGBM search+final ~16 min,
+LogReg ~8 min, target encoding comparison in section 7 ~13 min) — not meant for a live demo,
+use `eda.ipynb` for that.
+
+## Target encoding — tested, not adopted
+Tried cross-fitted (5-fold) target encoding as an alternative to frequency encoding for the
+same high-cardinality columns, same time-based split, same LightGBM hyperparams.
+
+| Encoding | Train AUC | Test AUC | Test log-loss | Train-Test AUC gap |
+|---|---|---|---|---|
+| Frequency (adopted) | 0.7545 | 0.7278 | 0.4085 | 0.027 |
+| Target (cross-fitted) | 0.7765 | 0.7299 | 0.4064 | 0.047 |
+
+Target encoding wins on both test metrics, but only marginally (+0.002 AUC, +0.002 log-loss),
+while the train-test gap nearly doubles — and it costs ~9 extra minutes per run (5-fold
+cross-fitting per column) vs. frequency encoding's near-instant `value_counts()`. Given the
+project's stability goal, **frequency encoding stays the primary model**; target encoding is
+documented in `full_pipeline.ipynb` section 7 as a tested-and-rejected alternative — a good,
+honest trade-off story for the slides.
+
+Gotcha hit along the way: early-stopping on `eval_metric='auc'` alone stopped training after
+only ~6-100 rounds, because AUC (ranking) saturates almost immediately with target-encoded
+features while log-loss (calibration) keeps improving for longer — switching early stopping
+to `eval_metric='binary_logloss'` fixed it. Worth remembering any time a target-encoded/strong
+feature makes a model converge suspiciously fast.
 
 ## Next up
-1. Try target encoding (with cross-fitting to avoid leakage) — may beat frequency encoding
-2. If submitting to Kaggle leaderboard: refit frequency maps on all of `train.csv` (no future
+1. If submitting to Kaggle leaderboard: refit frequency maps on all of `train.csv` (no future
    data to hold out at submission time), run the same pipeline on Kaggle's `test.gz`, submit
-3. Pull the full-pipeline results/plots into slides
+2. Pull the full-pipeline results/plots into slides (`slides/presentation.html` already has a
+   trade-offs slide anticipating this target-encoding result)
 
 ## Plan (the presentation arc)
 EDA (imbalance) → feature prep → baseline → Logistic Regression → LightGBM → evaluation (AUC,

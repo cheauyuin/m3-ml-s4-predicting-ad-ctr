@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Predicting Ad Click-Through Rate — S4</title>
+<style>
+  :root{
+    --bg:#f7f8fb; --panel:#ffffff; --text:#1a2233; --muted:#5b6478; --border:#e2e5ec;
+    --blue:#2563eb; --teal:#0d9488; --amber:#d97706; --green:#16a34a; --red:#dc2626;
+    --grid:#e8eaf0; --chip:#eef1f8;
+    --shadow: 0 1px 3px rgba(20,25,40,.06), 0 8px 24px rgba(20,25,40,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1420; --panel:#161d2e; --text:#e8ecf4; --muted:#9aa4ba; --border:#2a3348;
+      --blue:#5b8def; --teal:#2dd4bf; --amber:#f59e0b; --green:#34d399; --red:#f87171;
+      --grid:#232c42; --chip:#1d253a;
+      --shadow: 0 1px 3px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1420; --panel:#161d2e; --text:#e8ecf4; --muted:#9aa4ba; --border:#2a3348;
+    --blue:#5b8def; --teal:#2dd4bf; --amber:#f59e0b; --green:#34d399; --red:#f87171;
+    --grid:#232c42; --chip:#1d253a;
+    --shadow: 0 1px 3px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --bg:#f7f8fb; --panel:#ffffff; --text:#1a2233; --muted:#5b6478; --border:#e2e5ec;
+    --blue:#2563eb; --teal:#0d9488; --amber:#d97706; --green:#16a34a; --red:#dc2626;
+    --grid:#e8eaf0; --chip:#eef1f8;
+    --shadow: 0 1px 3px rgba(20,25,40,.06), 0 8px 24px rgba(20,25,40,.05);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    overflow:hidden;
+  }
+
+  .deck{ position:relative; height:100vh; width:100vw; }
+
+  .slide{
+    position:absolute; inset:0; display:none;
+    flex-direction:column; justify-content:center;
+    padding: clamp(24px, 5vw, 72px) clamp(24px, 8vw, 120px);
+    overflow-y:auto;
+  }
+  .slide.active{ display:flex; }
+
+  .kicker{
+    text-transform:uppercase; letter-spacing:.12em; font-size:.72rem; font-weight:700;
+    color:var(--teal); margin-bottom:10px;
+  }
+  h1{ font-size:clamp(1.8rem, 4vw, 3rem); margin:0 0 8px; line-height:1.1; }
+  h2{ font-size:clamp(1.4rem, 3vw, 2.1rem); margin:0 0 22px; line-height:1.15; }
+  .sub{ color:var(--muted); font-size:clamp(1rem,1.6vw,1.25rem); max-width:60ch; margin:0 0 8px; }
+  p.lede{ font-size:clamp(1rem,1.5vw,1.15rem); color:var(--muted); max-width:70ch; }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(20px,4vw,56px); align-items:center; width:100%; }
+  .grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; width:100%; }
+  @media (max-width: 820px){ .grid2{grid-template-columns:1fr;} .grid3{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:16px;
+    padding:22px 24px; box-shadow:var(--shadow);
+  }
+  .card h3{ margin:0 0 6px; font-size:1.05rem; }
+  .card p{ margin:0; color:var(--muted); font-size:.95rem; }
+
+  .pill{
+    display:inline-flex; align-items:center; gap:8px; background:var(--chip);
+    border:1px solid var(--border); border-radius:999px; padding:6px 14px;
+    font-size:.85rem; font-weight:600; color:var(--text);
+  }
+  .dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+
+  table{ border-collapse:collapse; width:100%; font-size:.95rem; }
+  th,td{ text-align:left; padding:10px 14px; border-bottom:1px solid var(--border); }
+  th{ color:var(--muted); font-weight:600; font-size:.8rem; text-transform:uppercase; letter-spacing:.04em; }
+  tr:last-child td{ border-bottom:none; }
+  .num{ font-variant-numeric: tabular-nums; font-weight:600; }
+
+  .flow{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:100%; }
+  .flow .step{
+    flex:1; min-width:150px; background:var(--panel); border:1px solid var(--border);
+    border-radius:14px; padding:16px; box-shadow:var(--shadow); text-align:center;
+  }
+  .flow .step .n{ font-size:.7rem; color:var(--teal); font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+  .flow .arrow{ color:var(--muted); font-size:1.4rem; flex:0 0 auto; }
+
+  .barwrap{ width:100%; }
+  .barrow{ display:grid; grid-template-columns:150px 1fr 70px; align-items:center; gap:14px; margin:14px 0; }
+  .barrow .label{ font-size:.92rem; font-weight:600; }
+  .track{ position:relative; height:26px; background:var(--grid); border-radius:8px; overflow:hidden; }
+  .fill{ position:absolute; inset:0; width:0%; border-radius:8px; transition:width 1s ease; }
+  .barrow .val{ text-align:right; font-variant-numeric:tabular-nums; font-weight:700; }
+
+  .legend{ display:flex; gap:18px; margin-top:6px; flex-wrap:wrap; }
+  .legend span{ font-size:.85rem; color:var(--muted); display:inline-flex; align-items:center; gap:6px; }
+
+  .imbalance{ display:flex; height:64px; width:100%; border-radius:14px; overflow:hidden; box-shadow:var(--shadow); }
+  .imbalance .seg{ display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:.95rem; }
+
+  .timeline{ display:flex; width:100%; gap:6px; }
+  .timeline .day{
+    flex:1; height:70px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+    font-size:.78rem; font-weight:700; color:white;
+  }
+
+  .gap-badge{
+    display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:999px;
+    font-weight:700; font-size:.85rem;
+  }
+
+  footer.nav{
+    position:fixed; bottom:18px; left:0; right:0; display:flex; align-items:center;
+    justify-content:center; gap:16px; z-index:10;
+  }
+  .navbtn{
+    background:var(--panel); border:1px solid var(--border); color:var(--text);
+    border-radius:10px; padding:8px 16px; font-size:.9rem; cursor:pointer; box-shadow:var(--shadow);
+  }
+  .navbtn:hover{ filter:brightness(1.05); }
+  .navbtn:disabled{ opacity:.35; cursor:default; }
+  .counter{ color:var(--muted); font-size:.85rem; font-variant-numeric:tabular-nums; min-width:56px; text-align:center; }
+
+  .progress{ position:fixed; top:0; left:0; height:3px; background:var(--blue); z-index:10; transition:width .3s ease; }
+
+  ul.clean{ margin:0; padding-left:1.1em; color:var(--muted); }
+  ul.clean li{ margin:6px 0; font-size:.98rem; }
+  ul.clean li strong{ color:var(--text); }
+
+  .tag-good{ color:var(--green); }
+  .tag-bad{ color:var(--red); }
+  .tag-neutral{ color:var(--amber); }
+
+  code.inline{
+    background:var(--chip); border:1px solid var(--border); border-radius:6px;
+    padding:1px 6px; font-size:.88em;
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="deck" id="deck">
+
+  <!-- 1. Title -->
+  <section class="slide active">
+    <div class="kicker">Scenario S4 · Team ML Presentation</div>
+    <h1>Predicting Ad Click-Through Rate</h1>
+    <p class="sub">Will a user click this ad — yes or no? A binary classification problem, and a case study in why the obvious metric (accuracy) is the wrong one.</p>
+    <div style="margin-top:28px; display:flex; gap:10px; flex-wrap:wrap;">
+      <span class="pill"><span class="dot" style="background:var(--blue)"></span>40.4M ad impressions</span>
+      <span class="pill"><span class="dot" style="background:var(--teal)"></span>Avazu CTR dataset · 10 days</span>
+      <span class="pill"><span class="dot" style="background:var(--amber)"></span>Solution design focus</span>
+    </div>
+  </section>
+
+  <!-- 2. The problem, layman -->
+  <section class="slide">
+    <div class="kicker">The Problem</div>
+    <h2>Every ad shown is a bet</h2>
+    <div class="grid2">
+      <div>
+        <p class="lede">Every time an app or website shows you an ad, that's called an <strong>impression</strong>. The advertiser only makes money if you <strong>click</strong> it.</p>
+        <p class="lede" style="margin-top:14px;">If we can predict <em>how likely</em> a given impression is to be clicked <strong>before</strong> showing it, we can pick better ads to show, price ad slots fairly, and stop wasting impressions on people who were never going to click.</p>
+        <p class="lede" style="margin-top:14px;">That's the whole task: <strong>given what we know about an impression (site, device, time of day...), predict the probability of a click.</strong></p>
+      </div>
+      <div class="card">
+        <h3>In one line</h3>
+        <p style="margin-bottom:14px;">Input: an ad impression's context.<br>Output: probability of click, 0-100%.</p>
+        <h3>Why it's hard</h3>
+        <p>Clicks are <strong>rare</strong> — most impressions are ignored. That single fact shapes every design decision that follows.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. The imbalance trap -->
+  <section class="slide">
+    <div class="kicker">The Trap</div>
+    <h2>Why "accuracy" lies to you</h2>
+    <p class="lede">Across our data, only <strong>~17% of impressions get clicked</strong>. The rest — 83% — don't.</p>
+    <div class="imbalance" style="margin:22px 0 8px;">
+      <div class="seg" style="width:83%; background:var(--muted);">83% — No click</div>
+      <div class="seg" style="width:17%; background:var(--blue);">17%</div>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--muted)"></span>No click</span>
+      <span><span class="dot" style="background:var(--blue)"></span>Click</span>
+    </div>
+    <div class="card" style="margin-top:26px;">
+      <h3>The trap</h3>
+      <p>A model that <strong>always predicts "no click"</strong> is right 83% of the time — <span class="tag-bad">83% "accurate"</span> — and completely useless. It never identifies a single click.</p>
+      <p style="margin-top:10px;"><strong>Our stand:</strong> we evaluate with <strong>AUC</strong> (can the model rank likely-clickers above unlikely ones?) and <strong>log-loss</strong> (are its probabilities well-calibrated?) — never plain accuracy.</p>
+    </div>
+  </section>
+
+  <!-- 4. Our approach / pipeline -->
+  <section class="slide">
+    <div class="kicker">Our Approach</div>
+    <h2>The pipeline, end to end</h2>
+    <div class="flow">
+      <div class="step"><div class="n">1 · Data</div>40.4M impressions<br>across 10 days</div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">2 · Features</div>Categorical context +<br>leak-safe ID encoding</div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">3 · Models</div>Baseline → Logistic<br>Regression → LightGBM</div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">4 · Evaluation</div>AUC / log-loss on a<br><strong>future, unseen day</strong></div>
+    </div>
+    <p class="lede" style="margin-top:26px;">Three deliberate design choices sit behind this pipeline — the next slides walk through each, and why we made that call.</p>
+  </section>
+
+  <!-- 5. Design decision 1: split -->
+  <section class="slide">
+    <div class="kicker">Design Decision · 1 of 3</div>
+    <h2>We split by time, not at random</h2>
+    <p class="lede">The data spans 10 days. A random 80/20 split mixes future and past together — the model can quietly "peek" at patterns from days it should never have seen yet.</p>
+    <div class="timeline" style="margin:24px 0 8px;">
+      <div class="day" style="flex:8; background:var(--blue);">Days 21–28 · Train</div>
+      <div class="day" style="flex:1; background:var(--teal);">Day 29<br>Validate</div>
+      <div class="day" style="flex:1; background:var(--amber);">Day 30<br>Test</div>
+    </div>
+    <div class="card" style="margin-top:22px;">
+      <h3>Our stand</h3>
+      <p>Train on the past, tune on the next day, and judge final performance on a day <strong>touched exactly once, at the very end.</strong> This mirrors how the model would actually be used — predicting tomorrow from today — and it's a much harder, more honest test than a random shuffle.</p>
+    </div>
+  </section>
+
+  <!-- 6. Design decision 2: features -->
+  <section class="slide">
+    <div class="kicker">Design Decision · 2 of 3</div>
+    <h2>Two kinds of features, two treatments</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Low-cardinality context</h3>
+        <p style="margin-bottom:10px;">Site category, device type, banner position, hour of day — a handful of possible values each. Simple to encode directly (one-hot).</p>
+        <span class="pill"><span class="dot" style="background:var(--blue)"></span>7 features</span>
+      </div>
+      <div class="card">
+        <h3>High-cardinality IDs</h3>
+        <p style="margin-bottom:10px;">Site ID, device ID, device model — thousands of distinct values. Too many to one-hot encode, but their raw ID is meaningless anyway.</p>
+        <span class="pill"><span class="dot" style="background:var(--teal)"></span>5 features, frequency-encoded</span>
+      </div>
+    </div>
+    <div class="card" style="margin-top:22px;">
+      <h3>Our stand — leak-safe by construction</h3>
+      <p>We encode each ID as "how often has this been seen?" — a useful signal without exposing the click label. Critically, that frequency count is <strong>learned only from the training days</strong>, then applied unchanged to validation/test. No peeking, no leakage.</p>
+    </div>
+  </section>
+
+  <!-- 7. Design decision 3: models -->
+  <section class="slide">
+    <div class="kicker">Design Decision · 3 of 3</div>
+    <h2>Two models, on purpose</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Logistic Regression</h3>
+        <p>A simple, linear, highly interpretable model. Fast, transparent, and — as we'll see — extremely stable. Kept as the trustworthy baseline.</p>
+      </div>
+      <div class="card">
+        <h3>LightGBM</h3>
+        <p>A gradient-boosted tree ensemble. Captures interactions a linear model can't (e.g. "mobile + evening + this site category"). Tuned with regularization and stopped early based on validation performance — not a guessed tree count.</p>
+      </div>
+    </div>
+    <p class="lede" style="margin-top:22px;">This pairing lets us show the class a real trade-off: <strong>simplicity &amp; stability</strong> vs. <strong>capacity &amp; performance</strong> — not just pick "the best model" and move on.</p>
+  </section>
+
+  <!-- 8. Results -->
+  <section class="slide">
+    <div class="kicker">Results</div>
+    <h2>Measured on Day 30 — never used for tuning</h2>
+    <div class="barwrap">
+      <div class="barrow">
+        <div class="label">Baseline</div>
+        <div class="track"><div class="fill" data-w="50" style="background:var(--muted)"></div></div>
+        <div class="val">0.500</div>
+      </div>
+      <div class="barrow">
+        <div class="label">Logistic Regression</div>
+        <div class="track"><div class="fill" data-w="65" style="background:var(--teal)"></div></div>
+        <div class="val">0.651</div>
+      </div>
+      <div class="barrow">
+        <div class="label">LightGBM</div>
+        <div class="track"><div class="fill" data-w="73" style="background:var(--blue)"></div></div>
+        <div class="val">0.728</div>
+      </div>
+    </div>
+    <p class="lede" style="margin-top:6px;">AUC on held-out test day (0.5 = random guessing, 1.0 = perfect ranking)</p>
+    <table style="margin-top:22px;">
+      <thead><tr><th>Model</th><th>Test AUC</th><th>Test log-loss</th></tr></thead>
+      <tbody>
+        <tr><td>Baseline (always predict avg. rate)</td><td class="num">0.500</td><td class="num">0.455</td></tr>
+        <tr><td>Logistic Regression</td><td class="num">0.651</td><td class="num">0.437</td></tr>
+        <tr><td>LightGBM (tuned)</td><td class="num">0.728</td><td class="num">0.409</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 9. Overfitting check -->
+  <section class="slide">
+    <div class="kicker">Is it trustworthy?</div>
+    <h2>Checking for overfitting, explicitly</h2>
+    <p class="lede">A model can look great on training data and fall apart on new data. We report the gap on purpose, instead of hiding it.</p>
+    <div class="grid2" style="margin-top:20px;">
+      <div class="card">
+        <h3>Logistic Regression</h3>
+        <p style="margin:10px 0;">Train AUC 0.627 → Test AUC 0.651</p>
+        <span class="gap-badge" style="background:rgba(22,163,74,.12); color:var(--green);">Gap: −0.024 · rock solid</span>
+        <p style="margin-top:10px;">Test performance actually <em>matches or beats</em> train — about as low-variance as a model gets.</p>
+      </div>
+      <div class="card">
+        <h3>LightGBM</h3>
+        <p style="margin:10px 0;">Train AUC 0.755 → Test AUC 0.728</p>
+        <span class="gap-badge" style="background:rgba(217,119,6,.12); color:var(--amber);">Gap: +0.027 · small, healthy</span>
+        <p style="margin-top:10px;">Higher capacity means <em>some</em> gap is expected — regularization and early stopping (860 trees) kept it small.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. Our stance / trade-offs -->
+  <section class="slide">
+    <div class="kicker">Our Stand</div>
+    <h2>Trade-offs, made explicit</h2>
+    <table>
+      <thead><tr><th>Choice</th><th>What we gained</th><th>What we gave up</th></tr></thead>
+      <tbody>
+        <tr><td><strong>LightGBM</strong> over LogReg-only</td><td>+0.08 AUC, captures interactions</td><td>Less interpretable, needs tuning care</td></tr>
+        <tr><td><strong>Frequency encoding</strong> over target encoding</td><td>Simple, near-zero overfit risk</td><td>Left ~0.002 AUC on the table (tested — next slide)</td></tr>
+        <tr><td><strong>Time-based split</strong> over random split</td><td>Honest, realistic generalization estimate</td><td>Harder benchmark — numbers look "worse" than a random split would show</td></tr>
+        <tr><td><strong>Full 40M-row run</strong> over sample-only</td><td>+0.09 AUC vs. 200k-row demo</td><td>~20-25 min runtime — not live-demo friendly</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 11. Did we chase the obvious next lead? -->
+  <section class="slide">
+    <div class="kicker">Diligence Check</div>
+    <h2>We tested the "obvious upgrade" — target encoding</h2>
+    <p class="lede">Instead of just proposing target encoding as future work, we built it (5-fold cross-fitted, leak-safe) and ran it head-to-head against frequency encoding, same split, same model.</p>
+    <table style="margin-top:20px;">
+      <thead><tr><th>Encoding</th><th>Train AUC</th><th>Test AUC</th><th>Test log-loss</th><th>Train-Test gap</th></tr></thead>
+      <tbody>
+        <tr><td>Frequency (adopted)</td><td class="num">0.755</td><td class="num">0.728</td><td class="num">0.409</td><td class="num tag-good">0.027</td></tr>
+        <tr><td>Target (tested)</td><td class="num">0.777</td><td class="num">0.730</td><td class="num">0.406</td><td class="num tag-neutral">0.047</td></tr>
+      </tbody>
+    </table>
+    <div class="card" style="margin-top:22px;">
+      <h3>Our stand</h3>
+      <p>Target encoding wins on both test metrics — but only marginally (+0.002 AUC), while the overfitting gap <strong>nearly doubles</strong> and it costs ~9× longer to compute (5-fold cross-fitting per column vs. an instant frequency count). Given our goal was a <strong>stable</strong> model, we shipped frequency encoding and kept target encoding as a documented, deliberately-rejected alternative — not a shortcut we skipped.</p>
+    </div>
+  </section>
+
+  <!-- 12. Next steps -->
+  <section class="slide">
+    <div class="kicker">What's Next</div>
+    <h2>Where we'd take this further</h2>
+    <div class="grid3">
+      <div class="card">
+        <h3>Stronger smoothing</h3>
+        <p>Tune target encoding's smoothing prior further — might keep most of the AUC/log-loss gain while narrowing the overfit gap.</p>
+      </div>
+      <div class="card">
+        <h3>Kaggle leaderboard</h3>
+        <p>Score our pipeline against the real held-out competition test set for an external, independent benchmark.</p>
+      </div>
+      <div class="card">
+        <h3>Calibration</h3>
+        <p>Check whether LightGBM's predicted probabilities are well-calibrated, not just well-ranked.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13. Thank you -->
+  <section class="slide">
+    <div class="kicker">Scenario S4</div>
+    <h1>Thank you</h1>
+    <p class="sub">Questions welcome — happy to dig into any design choice: the split, the encoding, the metrics, or the models.</p>
+  </section>
+
+</div>
+
+<footer class="nav">
+  <button class="navbtn" id="prevBtn">← Prev</button>
+  <span class="counter" id="counter">1 / 13</span>
+  <button class="navbtn" id="nextBtn">Next →</button>
+</footer>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let idx = 0;
+  const counter = document.getElementById('counter');
+  const progress = document.getElementById('progress');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  function render(){
+    slides.forEach((s,i)=> s.classList.toggle('active', i===idx));
+    counter.textContent = (idx+1) + ' / ' + total;
+    progress.style.width = ((idx+1)/total*100) + '%';
+    prevBtn.disabled = idx===0;
+    nextBtn.disabled = idx===total-1;
+    if (slides[idx].querySelectorAll) {
+      slides[idx].querySelectorAll('.fill').forEach(f=>{
+        f.style.width = '0%';
+        requestAnimationFrame(()=> f.style.width = f.dataset.w + '%');
+      });
+    }
+  }
+  function go(delta){
+    idx = Math.min(total-1, Math.max(0, idx+delta));
+    render();
+  }
+  prevBtn.addEventListener('click', ()=>go(-1));
+  nextBtn.addEventListener('click', ()=>go(1));
+  document.addEventListener('keydown', (e)=>{
+    if (['ArrowRight','PageDown',' '].includes(e.key)) go(1);
+    else if (['ArrowLeft','PageUp'].includes(e.key)) go(-1);
+    else if (e.key === 'Home') { idx=0; render(); }
+    else if (e.key === 'End') { idx=total-1; render(); }
+  });
+  render();
+</script>
+</body>
+</html>
