@@ -179,7 +179,7 @@
         <p class="lede">Every ad impression is a bet — the advertiser only earns if you click. We predict the probability of a click from context: site, device, time of day.</p>
         <div class="card" style="margin-top:20px;">
           <h3>Why it's hard</h3>
-          <p>Only <strong>~17% of impressions get clicked</strong>. A model that always guesses "no click" would be <span class="tag-bad">83% "accurate"</span> — and completely useless.</p>
+          <p>Only <strong>~17% of impressions get clicked</strong>. A model that always guesses "no click" would be <span class="tag-bad">83% "accurate"</span> — yet never identify a single click.</p>
           <p style="margin-top:10px;"><strong>Our decision:</strong> score with <strong>AUC</strong> and <strong>log-loss</strong>, never plain accuracy.</p>
         </div>
       </div>
@@ -200,7 +200,7 @@
       <tbody>
         <tr>
           <td>Scored with AUC &amp; log-loss</td>
-          <td>Only 17% of impressions are clicked — accuracy would hide a useless model</td>
+          <td>Only 17% of impressions are clicked — accuracy would hide a model that never identifies a click</td>
           <td>None — this is foundational, not negotiable</td>
         </tr>
         <tr>
