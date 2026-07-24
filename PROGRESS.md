@@ -79,11 +79,41 @@ features while log-loss (calibration) keeps improving for longer — switching e
 to `eval_metric='binary_logloss'` fixed it. Worth remembering any time a target-encoded/strong
 feature makes a model converge suspiciously fast.
 
+## Calibration check — done (not just a "next step" anymore)
+AUC/log-loss only check ranking; calibration checks whether "70% predicted" really means a
+~70% real-world click rate — which is exactly what the original Kaggle competition graded
+submissions on (log-loss, not AUC), and what would matter if these probabilities were ever
+used for pricing (expected value ≈ predicted CTR × value-per-click) rather than just ranking
+impressions for placement.
+
+Checked via a reliability diagram (10 quantile bins, predicted vs. actual click rate) on the
+untouched day-30 test set, using the adopted LightGBM + frequency-encoding model:
+
+- AUC 0.7278, log-loss 0.4085, **Brier score 0.1271**
+- The model **over-predicts at every probability level** — worst in the 10-20% predicted
+  range (predicts ~15-19%, actual is only ~9-16%, a 3-4 point overestimate)
+- Ranking (AUC) is unaffected, since calibration errors don't change relative order
+
+Practical takeaway: fine to use as-is for **placement/targeting** (ranking-based decisions);
+would need recalibration (Platt scaling or isotonic regression) before using the raw
+probability for **pricing**. Documented in `full_pipeline.ipynb` section 8, with the same
+reliability-diagram chart embedded in `slides/presentation_v2.html`.
+
+## Slides
+Three deck versions in `slides/`, kept separate so the team can compare before picking one:
+- `presentation.html` — 14 slides, full detail
+- `presentation_v2.html` — 10 slides (condensed + a "Data & Task" intro referencing the
+  Kaggle competition page, so the audience knows the input/output before the story starts;
+  currently the most complete/balanced version — includes target-encoding AND calibration
+  findings)
+- `presentation_v3.html` — 5 slides, ultra-condensed "decision log" table format (what we
+  did / why / trade-off), no next-steps content by design
+
+`CTR_Presentation_Script.pdf` (Desktop) is a plain-language speaker script — currently
+matches the 14-slide `presentation.html` only; needs updating once a final version is chosen.
+
 ## Next up
-1. If submitting to Kaggle leaderboard: refit frequency maps on all of `train.csv` (no future
-   data to hold out at submission time), run the same pipeline on Kaggle's `test.gz`, submit
-2. Pull the full-pipeline results/plots into slides (`slides/presentation.html` already has a
-   trade-offs slide anticipating this target-encoding result)
+1. Team to pick a final slide deck version (see "Slides" above)
 
 ## Plan (the presentation arc)
 EDA (imbalance) → feature prep → baseline → Logistic Regression → LightGBM → evaluation (AUC,
