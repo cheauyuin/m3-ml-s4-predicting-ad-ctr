@@ -156,7 +156,7 @@
   <section class="slide active">
     <div class="kicker">Scenario S4 · Team ML Presentation</div>
     <h1>Predicting Ad Click-Through Rate</h1>
-    <p class="sub">Will a user click this ad — yes or no? A binary classification problem, and a case study in why the obvious metric (accuracy) is the wrong one.</p>
+    <p class="sub">Will a user click this ad — yes or no? A binary classification problem.</p>
     <div style="margin-top:28px; display:flex; gap:10px; flex-wrap:wrap;">
       <span class="pill"><span class="dot" style="background:var(--blue)"></span>40.4M ad impressions</span>
       <span class="pill"><span class="dot" style="background:var(--teal)"></span>Avazu CTR dataset · 10 days</span>
@@ -354,31 +354,10 @@
       <thead><tr><th>Choice</th><th>Gained</th><th>Gave up</th></tr></thead>
       <tbody>
         <tr><td><strong>LightGBM</strong> over LogReg-only</td><td>+0.08 AUC, captures interactions</td><td>Less interpretable</td></tr>
-        <tr><td><strong>Frequency</strong> over Target Encoding</td><td>Near-zero overfit risk</td><td>~0.002 AUC left on table</td></tr>
         <tr><td><strong>Time-based</strong> over random split</td><td>Honest generalization estimate</td><td>Harder benchmark, lower numbers</td></tr>
         <tr><td><strong>Full 40M rows</strong> over sample</td><td>+0.09 AUC vs. 200k demo</td><td>~20-25 min runtime</td></tr>
       </tbody>
     </table>
-  </section>
-
-  <!-- 8. Diligence check + calibration (merged) -->
-  <section class="slide">
-    <div class="kicker">Diligence Checks</div>
-    <h2>What we tested beyond the headline numbers</h2>
-    <table>
-      <thead><tr><th>Encoding</th><th>Test AUC</th><th>Test log-loss</th><th>Train-Test gap</th></tr></thead>
-      <tbody>
-        <tr><td>Frequency (adopted)</td><td class="num">0.728</td><td class="num">0.409</td><td class="num tag-good">0.027</td></tr>
-        <tr><td>Target (tested)</td><td class="num">0.730</td><td class="num">0.406</td><td class="num tag-neutral">0.047</td></tr>
-      </tbody>
-    </table>
-    <div class="card" style="margin-top:16px;">
-      <p>Target encoding edged out frequency encoding — barely (+0.002 AUC) — while nearly doubling the overfit gap and costing 9× longer to compute. We shipped the stabler option, and kept this as proof we chased the idea down instead of guessing.</p>
-    </div>
-    <div class="card" style="margin-top:18px;">
-      <h3>Calibration — checked</h3>
-      <p>Model over-predicts at every level (Brier 0.127) — fine for ranking, but would need recalibration (Platt/isotonic) before pricing off the raw probability.</p>
-    </div>
   </section>
 
   <!-- 9. Thank you -->
@@ -394,7 +373,7 @@
 
 <footer class="nav">
   <button class="navbtn" id="prevBtn">← Prev</button>
-  <span class="counter" id="counter">1 / 11</span>
+  <span class="counter" id="counter">1 / 10</span>
   <button class="navbtn" id="nextBtn">Next →</button>
 </footer>
 
