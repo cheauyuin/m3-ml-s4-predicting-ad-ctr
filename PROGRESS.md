@@ -96,21 +96,22 @@ untouched day-30 test set, using the adopted LightGBM + frequency-encoding model
 
 Practical takeaway: fine to use as-is for **placement/targeting** (ranking-based decisions);
 would need recalibration (Platt scaling or isotonic regression) before using the raw
-probability for **pricing**. Documented in `full_pipeline.ipynb` section 8, with the same
-reliability-diagram chart embedded in `slides/presentation_v2.html`.
+probability for **pricing**. Documented in `full_pipeline.ipynb` section 8. (The dedicated
+"Diligence Checks" slide covering this + target encoding was removed from the deck for length;
+the finding still lives in the notebook and here.)
 
 ## Slides
-Three deck versions in `slides/`, kept separate so the team can compare before picking one:
-- `presentation.html` — 14 slides, full detail
-- `presentation_v2.html` — 10 slides (condensed + a "Data & Task" intro referencing the
-  Kaggle competition page, so the audience knows the input/output before the story starts;
-  currently the most complete/balanced version — includes target-encoding AND calibration
-  findings)
-- `presentation_v3.html` — 5 slides, ultra-condensed "decision log" table format (what we
-  did / why / trade-off), no next-steps content by design
+Team picked a final version — `slides/presentation.html` (10 slides): Title, Data & Task
+(Kaggle context), Problem, The Trap (imbalance + honest hour-of-day chart), Reading the Chart
+Carefully (site-category-mix scatter plot), Approach, Design Decisions, Results (ROC +
+feature importance), Trustworthy & Trade-offs, Thank You. The earlier 14-slide and 5-slide
+alternates were deleted once this version was chosen.
 
-`CTR_Presentation_Script.pdf` (Desktop) is a plain-language speaker script — currently
-matches the 14-slide `presentation.html` only; needs updating once a final version is chosen.
+**Stale, needs a resync**: both speaker-script PDFs on the Desktop
+(`CTR_Presentation_Script.pdf` and `CTR_Presentation_Script_v2.pdf`) were written against
+earlier slide counts/orderings (15 and 11 slides respectively) and no longer match this final
+10-slide deck exactly — regenerate one against the current `presentation.html` before
+presenting.
 
 ## Next up
 1. Team to pick a final slide deck version (see "Slides" above)
