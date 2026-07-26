@@ -106,14 +106,6 @@ Final version — `slides/presentation.html` (10 slides): Title, Data & Task
 Carefully (site-category-mix scatter plot), Approach, Design Decisions, Results (ROC +
 feature importance), Trustworthy & Trade-offs, Thank You. 
 
-## Next up
-1. Team to pick a final slide deck version (see "Slides" above)
-
-## Plan (the presentation arc)
-EDA (imbalance) → feature prep → baseline → Logistic Regression → LightGBM → evaluation (AUC,
-log-loss, ROC curve, feature importance) → slides.
-Story: baseline → logistic → boosting with AUC climbing.
-
 ## Gotchas to remember
 - Never commit `data/` or large CSVs (already in `.gitignore`).
 - Notebooks cause git merge conflicts — each teammate works in their own notebook file.
