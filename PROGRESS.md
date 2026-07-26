@@ -101,17 +101,10 @@ probability for **pricing**. Documented in `full_pipeline.ipynb` section 8. (The
 the finding still lives in the notebook and here.)
 
 ## Slides
-Team picked a final version — `slides/presentation.html` (10 slides): Title, Data & Task
+Final version — `slides/presentation.html` (10 slides): Title, Data & Task
 (Kaggle context), Problem, The Trap (imbalance + honest hour-of-day chart), Reading the Chart
 Carefully (site-category-mix scatter plot), Approach, Design Decisions, Results (ROC +
-feature importance), Trustworthy & Trade-offs, Thank You. The earlier 14-slide and 5-slide
-alternates were deleted once this version was chosen.
-
-**Stale, needs a resync**: both speaker-script PDFs on the Desktop
-(`CTR_Presentation_Script.pdf` and `CTR_Presentation_Script_v2.pdf`) were written against
-earlier slide counts/orderings (15 and 11 slides respectively) and no longer match this final
-10-slide deck exactly — regenerate one against the current `presentation.html` before
-presenting.
+feature importance), Trustworthy & Trade-offs, Thank You. 
 
 ## Next up
 1. Team to pick a final slide deck version (see "Slides" above)
